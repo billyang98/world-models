@@ -8,7 +8,7 @@ import gym
 import numpy as np
 from utils.misc import sample_continuous_policy
 
-def generate_data(rollouts, data_dir, noise_type): # pylint: disable=R0914
+def generate_data(rollouts, data_dir, noise_type, iteration_num): # pylint: disable=R0914
     """ Generates data """
     assert exists(data_dir), "The data directory does not exist..."
 
@@ -39,7 +39,13 @@ def generate_data(rollouts, data_dir, noise_type): # pylint: disable=R0914
             d_rollout += [done]
             if done:
                 print("> End of rollout {}, {} frames...".format(i, len(s_rollout)))
-                np.savez(join(data_dir, 'rollout_{}'.format(i)),
+                rollout_file_path = data_dir
+                rollout_file_name = ''
+                if iteration_num is not None:
+                    rollout_file_name = 'iter_{}_'.format(iteration_num)
+                rollout_file_path = join(rollout_file_path, 
+                                        '{}rollout_{}'.format(rollout_file_name, i))
+                np.savez(rollout_file_path,
                          observations=np.array(s_rollout),
                          rewards=np.array(r_rollout),
                          actions=np.array(a_rollout),
@@ -53,5 +59,8 @@ if __name__ == "__main__":
     parser.add_argument('--policy', type=str, choices=['white', 'brown'],
                         help='Noise type used for action sampling.',
                         default='brown')
+    parser.add_argument('--iteration_num', type=int,
+                    help="Iteration number of full traning of the world model, "
+                    "VAE, MDNRNN, C")
     args = parser.parse_args()
-    generate_data(args.rollouts, args.dir, args.policy)
+    generate_data(args.rollouts, args.dir, args.policy, args.iteration_num)

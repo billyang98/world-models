@@ -29,11 +29,12 @@ parser.add_argument('--noreload', action='store_true',
                     help='Best model is not reloaded if specified')
 parser.add_argument('--nosamples', action='store_true',
                     help='Does not save samples during training if specified')
-
+parser.add_argument('--iteration_num', type=int,
+                    help="Iteration number of full traning of the world model, "
+                    "VAE, MDNRNN, C")
 
 args = parser.parse_args()
 cuda = torch.cuda.is_available()
-
 
 torch.manual_seed(123)
 # Fix numeric divergence due to bug in Cudnn
@@ -122,10 +123,16 @@ def test():
     return test_loss
 
 # check vae dir exists, if not, create it
+if not exists(args.logdir):
+    mkdir(args.logdir)
 vae_dir = join(args.logdir, 'vae')
 if not exists(vae_dir):
     mkdir(vae_dir)
-    mkdir(join(vae_dir, 'samples'))
+if args.iteration_num is not None:
+    vae_dir = join(vae_dir, 'iter_{}'.format(args.iteration_num))
+    if not exists(vae_dir):
+      mkdir(vae_dir)
+      mkdir(join(vae_dir, 'samples'))
 
 reload_file = join(vae_dir, 'best.tar')
 if not args.noreload and exists(reload_file):

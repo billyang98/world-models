@@ -32,6 +32,9 @@ parser.add_argument('--display', action='store_true', help="Use progress bars if
                     "specified.")
 parser.add_argument('--max-workers', type=int, help='Maximum number of workers.',
                     default=32)
+parser.add_argument('--iteration_num', type=int,
+                    help="Iteration number of full traning of the world model, "
+                    "VAE, MDNRNN, C")
 args = parser.parse_args()
 
 # Max number of workers. M
@@ -44,14 +47,18 @@ time_limit = 1000
 
 # create tmp dir if non existent and clean it if existent
 tmp_dir = join(args.logdir, 'tmp')
+if args.iteration_num is not None:
+    tmp_dir = join(args.logdir, 'iter_{}'.format(args.iteration_num), 'tmp')
 if not exists(tmp_dir):
-    mkdir(tmp_dir)
+    mkdirs(tmp_dir)
 else:
     for fname in listdir(tmp_dir):
         unlink(join(tmp_dir, fname))
 
 # create ctrl dir if non exitent
 ctrl_dir = join(args.logdir, 'ctrl')
+if args.iteration_num is not None:
+    ctrl_dir = join(args.logdir, 'iter_{}'.format(args.iteration_num), 'ctrl')
 if not exists(ctrl_dir):
     mkdir(ctrl_dir)
 

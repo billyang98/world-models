@@ -55,6 +55,20 @@ You can test the obtained policy with `test_controller.py` e.g.
 ```bash
 python test_controller.py --logdir exp_dir
 ```
+### For testing training
+
+Some scripts that use smaller numbers to just test that the training scripts are
+working
+```bash
+python3 data/generation_script.py --rollouts 10 --rootdir datasets/carracing --threads 10
+```
+```bash
+python3 trainvae.py --logdir exp_dir --epochs 1
+```
+```bash
+python3 trainmdrnn.py --logdir exp_dir --epochs 1
+```
+
 
 ### Notes
 When running on a headless server, you will need to use `xvfb-run` to launch the controller training script. For instance,
