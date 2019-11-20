@@ -57,10 +57,13 @@ else:
 
 # create ctrl dir if non exitent
 ctrl_dir = join(args.logdir, 'ctrl')
+prev_ctrl_dir = ctrl_dir
 if args.iteration_num is not None:
     ctrl_dir = join(args.logdir, 'iter_{}'.format(args.iteration_num), 'ctrl')
+    prev_ctrl_dir = join(args.logdir, 'iter_{}'.format(args.iteration_num-1), 'ctrl')
 if not exists(ctrl_dir):
     mkdir(ctrl_dir)
+
 
 
 ################################################################################
@@ -154,11 +157,12 @@ controller = Controller(LSIZE, RSIZE, ASIZE)  # dummy instance
 
 # define current best and load parameters
 cur_best = None
-ctrl_file = join(ctrl_dir, 'best.tar')
+ctrl_file = join(prev_ctrl_dir, 'best.tar')
 print("Attempting to load previous best...")
 if exists(ctrl_file):
     state = torch.load(ctrl_file, map_location={'cuda:0': 'cpu'})
     cur_best = - state['reward']
+    print("Loading Controller from {}".format(ctrl_file))
     controller.load_state_dict(state['state_dict'])
     print("Previous best was {}...".format(-cur_best))
 

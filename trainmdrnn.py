@@ -56,11 +56,16 @@ vae.load_state_dict(state['state_dict'])
 
 # Loading model
 rnn_dir = join(args.logdir, 'mdrnn')
+# We should load the model from the previous iteration if this is iterative
+# training
+prev_rnn_dir = rnn_dir
 if args.iteration_num is not None:
     rnn_dir = join(args.logdir, 'iter_{}'.format(args.iteration_num), 'mdrnn')
+    prev_rnn_dir = join(args.logdir, 'iter_{}'.format(args.iteration_num-1), 'mdrnn')
 if not exists(rnn_dir):
     mkdirs(rnn_dir)
 rnn_file = join(rnn_dir, 'best.tar')
+prev_rnn_file = join(prev_rnn_file, 'best.tar')
 
 
 mdrnn = MDRNN(LSIZE, ASIZE, RSIZE, 5)
@@ -69,12 +74,12 @@ optimizer = torch.optim.RMSprop(mdrnn.parameters(), lr=1e-3, alpha=.9)
 scheduler = ReduceLROnPlateau(optimizer, 'min', factor=0.5, patience=5)
 earlystopping = EarlyStopping('min', patience=30)
 
-
-if exists(rnn_file) and not args.noreload:
-    rnn_state = torch.load(rnn_file)
+if exists(prev_rnn_file) and not args.noreload:
+    rnn_state = torch.load(prev_rnn_file)
     print("Loading MDRNN at epoch {} "
           "with test error {}".format(
               rnn_state["epoch"], rnn_state["precision"]))
+    print("MDRNN loaded from {}".format(prev_rnn_file))
     mdrnn.load_state_dict(rnn_state["state_dict"])
     optimizer.load_state_dict(rnn_state["optimizer"])
     scheduler.load_state_dict(state['scheduler'])
