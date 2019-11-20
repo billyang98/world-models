@@ -26,6 +26,11 @@ parser.add_argument('--noreload', action='store_true',
                     help="Do not reload if specified.")
 parser.add_argument('--include_reward', action='store_true',
                     help="Add a reward modelisation term to the loss.")
+parser.add_argument('--epochs', type=int, default=30,
+                    help="Number of epochs to train")
+parser.add_argument('--iteration_num', type=int,
+                    help="Iteration number of full traning of the world model, "
+                    "VAE, MDNRNN, C")
 args = parser.parse_args()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -33,9 +38,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # constants
 BSIZE = 16
 SEQ_LEN = 32
-epochs = 30
+epochs = args.epochs
 
 # Loading VAE
+vae_file = join(args.logdir, 'vae', 'best.tar')
+if args.iteration_num is not None:
+    vae_file = join(args.logdir, 'vae', 'iter_{}'.format(args.iteration_num),'best.tar')
 vae_file = join(args.logdir, 'vae', 'best.tar')
 assert exists(vae_file), "No trained VAE in the logdir..."
 state = torch.load(vae_file)
@@ -48,10 +56,12 @@ vae.load_state_dict(state['state_dict'])
 
 # Loading model
 rnn_dir = join(args.logdir, 'mdrnn')
+if args.iteration_num is not None:
+    rnn_dir = join(args.logdir, 'iter_{}'.format(args.iteration_num), 'mdrnn')
+if not exists(rnn_dir):
+    mkdirs(rnn_dir)
 rnn_file = join(rnn_dir, 'best.tar')
 
-if not exists(rnn_dir):
-    mkdir(rnn_dir)
 
 mdrnn = MDRNN(LSIZE, ASIZE, RSIZE, 5)
 mdrnn.to(device)
