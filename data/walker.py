@@ -1,15 +1,16 @@
 """
 Generating data from the BipedalWalkerHardcore-v2 gym environment.
-!!! DOES NOT WORK ON TITANIC, DO IT AT HOME, THEN SCP !!!
 """
 import argparse
-from os.path import join, exists
+from os.path import exists, join
+
 import gym
 import numpy as np
+
 from utils.misc import sample_continuous_policy
 
+
 def generate_data(rollouts, data_dir, noise_type): # pylint: disable=R0914
-    """ Generates data """
     assert exists(data_dir), "The data directory does not exist..."
 
     env = gym.make("BipedalWalkerHardcore-v2")
@@ -32,7 +33,8 @@ def generate_data(rollouts, data_dir, noise_type): # pylint: disable=R0914
             t += 1
 
             s, r, done, _ = env.step(action)
-            s_rollout += [s]
+            im_frame = env.render(mode="rgb_array")
+            s_rollout += [im_frame]
             r_rollout += [r]
             d_rollout += [done]
             if done:
