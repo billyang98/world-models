@@ -8,3 +8,4 @@ frames/
 dock_config.json
 .mypy_cache
 venv/
+exp_dir/
