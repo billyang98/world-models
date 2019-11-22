@@ -32,6 +32,9 @@ parser.add_argument('--nosamples', action='store_true',
 parser.add_argument('--iteration_num', type=int,
                     help="Iteration number of full traning of the world model, "
                     "VAE, MDNRNN, C")
+parser.add_argument("--dataset_dir", type=str, 
+                    help="Directory where the rollouts exist",
+                    default="datasets/carracing")
 
 args = parser.parse_args()
 cuda = torch.cuda.is_available()
@@ -56,9 +59,9 @@ transform_test = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-dataset_dir = 'datasets/walker'
+dataset_dir = args.dataset_dir
 if args.iteration_num is not None:
-  dataset_dir = 'datasets/walker/iter_{}'.format(args.iteration_num)
+  dataset_dir = join(args.dataset_dir,'/iter_{}'.format(args.iteration_num))
 
 
 dataset_train = RolloutObservationDataset(dataset_dir,
