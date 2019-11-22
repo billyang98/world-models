@@ -118,12 +118,18 @@ class RolloutGenerator(object):
     :attr time_limit: rollouts have a maximum of time_limit timesteps
     """
 
-    def __init__(self, mdir, device, time_limit):
+    def __init__(self, mdir, device, time_limit, iteration_num=None):
         """ Build vae, rnn, controller and environment. """
         # Loading world model and vae
         vae_file, rnn_file, ctrl_file = [
             join(mdir, m, "best.tar") for m in ["vae", "mdrnn", "ctrl"]
         ]
+
+        if iteration_num is not None:
+            vae_file, rnn_file, ctrl_file = [
+                join(mdir, m, "iter_{}".format(iteration_num), "best.tar")
+                for m in ["vae", "mdrnn", "ctrl"]
+            ]
 
         assert exists(vae_file) and exists(
             rnn_file

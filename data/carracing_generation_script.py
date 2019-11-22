@@ -25,6 +25,8 @@ rpt = args.rollouts // args.threads
 
 def _threaded_generation(i):
     tdir = join(args.rootdir, 'thread_{}'.format(i))
+    if args.iteration_num is not None:
+      tdir = join(args.rootdir, 'iter_{}'.format(args.iteration_num),'thread_{}'.format(i))
     makedirs(tdir, exist_ok=True)
     cmd = ['xvfb-run', '-s', '"-screen 0 1400x900x24"']
     cmd += ['--server-num={}'.format(i + 1)]

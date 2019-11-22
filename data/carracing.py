@@ -39,12 +39,7 @@ def generate_data(rollouts, data_dir, noise_type, iteration_num): # pylint: disa
             d_rollout += [done]
             if done:
                 print("> End of rollout {}, {} frames...".format(i, len(s_rollout)))
-                rollout_file_path = data_dir
-                rollout_file_name = ''
-                if iteration_num is not None:
-                    rollout_file_name = 'iter_{}_'.format(iteration_num)
-                rollout_file_path = join(rollout_file_path, 
-                                        '{}rollout_{}'.format(rollout_file_name, i))
+                rollout_file_path = join(data_dir, 'rollout_{}'.format(i))
                 np.savez(rollout_file_path,
                          observations=np.array(s_rollout),
                          rewards=np.array(r_rollout),
