@@ -56,9 +56,14 @@ transform_test = transforms.Compose([
     transforms.ToTensor(),
 ])
 
-dataset_train = RolloutObservationDataset('datasets/walker',
+dataset_dir = 'datasets/walker'
+if args.iteration_num is not None:
+  dataset_dir = 'datasets/walker/iter_{}'.format(args.iteration_num)
+
+
+dataset_train = RolloutObservationDataset(dataset_dir,
                                           transform_train, train=True)
-dataset_test = RolloutObservationDataset('datasets/walker',
+dataset_test = RolloutObservationDataset(dataset_dir,
                                          transform_test, train=False)
 train_loader = torch.utils.data.DataLoader(
     dataset_train, batch_size=args.batch_size, shuffle=True, num_workers=2)
@@ -126,21 +131,24 @@ def test():
 if not exists(args.logdir):
     mkdir(args.logdir)
 vae_dir = join(args.logdir, 'vae')
+prev_vae_dir = vae_dir
 if not exists(vae_dir):
     mkdir(vae_dir)
 if args.iteration_num is not None:
+    prev_vae_dir = join(vae_dir, 'iter_{}'.format(args.iteration_num-1))
     vae_dir = join(vae_dir, 'iter_{}'.format(args.iteration_num))
     if not exists(vae_dir):
       mkdir(vae_dir)
       mkdir(join(vae_dir, 'samples'))
 
-reload_file = join(vae_dir, 'best.tar')
+reload_file = join(prev_vae_dir, 'best.tar')
 if not args.noreload and exists(reload_file):
     state = torch.load(reload_file)
     print("Reloading model at epoch {}"
           ", with test error {}".format(
               state['epoch'],
               state['precision']))
+    print("VAE loaded from {}".format(reload_file))
     model.load_state_dict(state['state_dict'])
     optimizer.load_state_dict(state['optimizer'])
     scheduler.load_state_dict(state['scheduler'])

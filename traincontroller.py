@@ -8,7 +8,7 @@ to process a queue filled with parameters to be evaluated.
 import argparse
 import sys
 from os.path import join, exists
-from os import mkdir, unlink, listdir, getpid
+from os import mkdir, unlink, listdir, getpid, makedirs
 from time import sleep
 from torch.multiprocessing import Process, Queue
 import torch
@@ -48,9 +48,9 @@ time_limit = 1000
 # create tmp dir if non existent and clean it if existent
 tmp_dir = join(args.logdir, 'tmp')
 if args.iteration_num is not None:
-    tmp_dir = join(args.logdir, 'iter_{}'.format(args.iteration_num), 'tmp')
+    tmp_dir = join(args.logdir, 'tmp', 'iter_{}'.format(args.iteration_num))
 if not exists(tmp_dir):
-    mkdirs(tmp_dir)
+    makedirs(tmp_dir)
 else:
     for fname in listdir(tmp_dir):
         unlink(join(tmp_dir, fname))
@@ -59,10 +59,10 @@ else:
 ctrl_dir = join(args.logdir, 'ctrl')
 prev_ctrl_dir = ctrl_dir
 if args.iteration_num is not None:
-    ctrl_dir = join(args.logdir, 'iter_{}'.format(args.iteration_num), 'ctrl')
-    prev_ctrl_dir = join(args.logdir, 'iter_{}'.format(args.iteration_num-1), 'ctrl')
+    ctrl_dir = join(args.logdir, 'ctrl', 'iter_{}'.format(args.iteration_num))
+    prev_ctrl_dir = join(args.logdir, 'ctrl', 'iter_{}'.format(args.iteration_num-1))
 if not exists(ctrl_dir):
-    mkdir(ctrl_dir)
+    makedirs(ctrl_dir)
 
 
 
@@ -91,16 +91,27 @@ def slave_routine(p_queue, r_queue, e_queue, p_index):
     :args e_queue: as soon as not empty, terminate
     :args p_index: the process index
     """
+#    print('in slave')
     # init routine
-    gpu = p_index % torch.cuda.device_count()
+#    print('init routine')
+    gpu = 0 
+    if torch.cuda.is_available():
+      gpu = p_index % torch.cuda.device_count()
     device = torch.device('cuda:{}'.format(gpu) if torch.cuda.is_available() else 'cpu')
 
     # redirect streams
+#    print('redirect streams')
     sys.stdout = open(join(tmp_dir, str(getpid()) + '.out'), 'a')
     sys.stderr = open(join(tmp_dir, str(getpid()) + '.err'), 'a')
 
+#    print('with torch no grad')
     with torch.no_grad():
-        r_gen = RolloutGenerator(args.logdir, device, time_limit)
+#        print('hello')
+        r_gen = 0
+        if args.iteration_num is None:
+          r_gen = RolloutGenerator(args.logdir, device, time_limit)
+        else:
+          r_gen = RolloutGenerator(args.logdir, device, time_limit, args.iteration_num)
 
         while e_queue.empty():
             if p_queue.empty():

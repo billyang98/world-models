@@ -2,7 +2,7 @@
 import argparse
 from functools import partial
 from os.path import join, exists
-from os import mkdir
+from os import mkdir, makedirs
 import torch
 import torch.nn.functional as f
 from torch.utils.data import DataLoader
@@ -44,12 +44,12 @@ epochs = args.epochs
 vae_file = join(args.logdir, 'vae', 'best.tar')
 if args.iteration_num is not None:
     vae_file = join(args.logdir, 'vae', 'iter_{}'.format(args.iteration_num),'best.tar')
-vae_file = join(args.logdir, 'vae', 'best.tar')
 assert exists(vae_file), "No trained VAE in the logdir..."
 state = torch.load(vae_file)
 print("Loading VAE at epoch {} "
       "with test error {}".format(
           state['epoch'], state['precision']))
+print("Loaded VAE from {}".format(vae_file))
 
 vae = VAE(3, LSIZE).to(device)
 vae.load_state_dict(state['state_dict'])
@@ -60,12 +60,12 @@ rnn_dir = join(args.logdir, 'mdrnn')
 # training
 prev_rnn_dir = rnn_dir
 if args.iteration_num is not None:
-    rnn_dir = join(args.logdir, 'iter_{}'.format(args.iteration_num), 'mdrnn')
-    prev_rnn_dir = join(args.logdir, 'iter_{}'.format(args.iteration_num-1), 'mdrnn')
+    rnn_dir = join(args.logdir, 'mdrnn', 'iter_{}'.format(args.iteration_num))
+    prev_rnn_dir = join(args.logdir, 'mdrnn', 'iter_{}'.format(args.iteration_num-1))
 if not exists(rnn_dir):
-    mkdirs(rnn_dir)
+    makedirs(rnn_dir)
 rnn_file = join(rnn_dir, 'best.tar')
-prev_rnn_file = join(prev_rnn_file, 'best.tar')
+prev_rnn_file = join(prev_rnn_dir, 'best.tar')
 
 
 mdrnn = MDRNN(LSIZE, ASIZE, RSIZE, 5)
@@ -87,13 +87,17 @@ if exists(prev_rnn_file) and not args.noreload:
 
 
 # Data Loading
+dataset_dir = 'datasets/carracing'
+if args.iteration_num is not None:
+  dataset_dir = 'datasets/carracing/iter_{}'.format(args.iteration_num)
+
 transform = transforms.Lambda(
     lambda x: np.transpose(x, (0, 3, 1, 2)) / 255)
 train_loader = DataLoader(
-    RolloutSequenceDataset('datasets/carracing', SEQ_LEN, transform, buffer_size=30),
+    RolloutSequenceDataset(dataset_dir, SEQ_LEN, transform, buffer_size=30),
     batch_size=BSIZE, num_workers=8, shuffle=True)
 test_loader = DataLoader(
-    RolloutSequenceDataset('datasets/carracing', SEQ_LEN, transform, train=False, buffer_size=10),
+    RolloutSequenceDataset(dataset_dir, SEQ_LEN, transform, train=False, buffer_size=10),
     batch_size=BSIZE, num_workers=8)
 
 def to_latent(obs, next_obs):
@@ -107,6 +111,8 @@ def to_latent(obs, next_obs):
         - next_latent_obs: 4D torch tensor (BSIZE, SEQ_LEN, LSIZE)
     """
     with torch.no_grad():
+#        print('obs {}'.format(obs.size()) )
+#        print('next_obs logsigma {}'.format(next_obs.size()) )
         obs, next_obs = [
             f.upsample(x.view(-1, 3, SIZE, SIZE), size=RED_SIZE,
                        mode='bilinear', align_corners=True)
@@ -115,6 +121,8 @@ def to_latent(obs, next_obs):
         (obs_mu, obs_logsigma), (next_obs_mu, next_obs_logsigma) = [
             vae(x)[1:] for x in (obs, next_obs)]
 
+#        print('obs mu {}'.format(obs_mu.size()) )
+#        print('obs logsigma {}'.format(obs_logsigma.size()) )
         latent_obs, latent_next_obs = [
             (x_mu + x_logsigma.exp() * torch.randn_like(x_mu)).view(BSIZE, SEQ_LEN, LSIZE)
             for x_mu, x_logsigma in
@@ -215,7 +223,9 @@ test = partial(data_pass, train=False, include_reward=args.include_reward)
 cur_best = None
 for e in range(epochs):
     train(e)
+#    print('done train')
     test_loss = test(e)
+#    print('done test')
     scheduler.step(test_loss)
     earlystopping.step(test_loss)
 

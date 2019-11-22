@@ -55,18 +55,27 @@ You can test the obtained policy with `test_controller.py` e.g.
 ```bash
 python test_controller.py --logdir exp_dir
 ```
+
+### Iterative Training
+Script to train the full world model iteratively, ie. training the model,
+generating more rollouts, then repeating.
+TODO: write the full script with commands
+
 ### For testing training
 
 Some scripts that use smaller numbers to just test that the training scripts are
 working
 ```bash
-python3 data/generation_script.py --rollouts 10 --rootdir datasets/carracing --threads 10
+python3 data/generation_script.py --rollouts 10 --rootdir datasets/carracing --threads 10 --iteration_num 0
 ```
 ```bash
-python3 trainvae.py --logdir exp_dir --epochs 1
+python3 trainvae.py --logdir exp_dir --epochs 1 --iteration_num 0
 ```
 ```bash
-python3 trainmdrnn.py --logdir exp_dir --epochs 1
+python3 trainmdrnn.py --logdir exp_dir --epochs 1 --iteration_num 0
+```
+```bash
+python3 traincontroller.py --logdir exp_dir --n-samples 4 --pop-size 4 --target-return 950 --display --iteration_num=0
 ```
 
 
