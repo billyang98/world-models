@@ -31,6 +31,9 @@ parser.add_argument('--epochs', type=int, default=30,
 parser.add_argument('--iteration_num', type=int,
                     help="Iteration number of full traning of the world model, "
                     "VAE, MDNRNN, C")
+parser.add_argument("--dataset_dir", type=str, 
+                    help="Directory where the rollouts exist",
+                    default="datasets/carracing")
 args = parser.parse_args()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -87,9 +90,9 @@ if exists(prev_rnn_file) and not args.noreload:
 
 
 # Data Loading
-dataset_dir = 'datasets/carracing'
+dataset_dir = args.dataset_dir
 if args.iteration_num is not None:
-  dataset_dir = 'datasets/carracing/iter_{}'.format(args.iteration_num)
+  dataset_dir = join(dataset_dir, 'iter_{}'.format(args.iteration_num))
 
 transform = transforms.Lambda(
     lambda x: np.transpose(x, (0, 3, 1, 2)) / 255)
