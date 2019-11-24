@@ -75,7 +75,10 @@ python3 trainvae.py --logdir exp_dir --epochs 1 --iteration_num 0
 python3 trainmdrnn.py --logdir exp_dir --epochs 1 --iteration_num 0
 ```
 ```bash
-python3 traincontroller.py --logdir exp_dir --n-samples 4 --pop-size 4 --target-return 950 --display --iteration_num=0
+python3 traincontroller.py --logdir exp_dir --n-samples 4 --pop-size 4 --target-return 950 --display --iteration_num 0
+```
+```bash
+python3 iterative_train.py
 ```
 
 
