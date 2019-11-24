@@ -15,17 +15,25 @@ parser.add_argument('--rootdir', type=str, help="Directory to store rollout "
 parser.add_argument('--policy', type=str, choices=['brown', 'white'],
                     help="Directory to store rollout directories of each thread",
                     default='brown')
+parser.add_argument('--iteration_num', type=int,
+                    help="Iteration number of full traning of the world model, "
+                    "VAE, MDNRNN, C")
 args = parser.parse_args()
 
-rpt = args.rollouts // args.threads + 1
+assert args.rollouts % args.threads == 0
+rpt = args.rollouts // args.threads
 
 def _threaded_generation(i):
     tdir = join(args.rootdir, 'thread_{}'.format(i))
+    if args.iteration_num is not None:
+      tdir = join(args.rootdir, 'iter_{}'.format(args.iteration_num),'thread_{}'.format(i))
     makedirs(tdir, exist_ok=True)
     cmd = ['xvfb-run', '-s', '"-screen 0 1400x900x24"']
     cmd += ['--server-num={}'.format(i + 1)]
     cmd += ["python3", "-m", "data.walker", "--dir",
             tdir, "--rollouts", str(rpt), "--policy", args.policy]
+    if args.iteration_num is not None:
+      cmd += ["--iteration_num",str(args.iteration_num)]
     cmd = " ".join(cmd)
     print(cmd)
     call(cmd, shell=True)
