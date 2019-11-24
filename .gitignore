@@ -10,3 +10,7 @@ dock_config.json
 venv/
 exp_dir/
 .vscode
+*.swp
+*.swo
+.gitignore
+session.vim
