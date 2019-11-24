@@ -33,7 +33,7 @@ parser.add_argument('--iteration_num', type=int,
                     "VAE, MDNRNN, C")
 parser.add_argument("--dataset_dir", type=str, 
                     help="Directory where the rollouts exist",
-                    default="datasets/carracing")
+                    default="datasets/walker")
 args = parser.parse_args()
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')

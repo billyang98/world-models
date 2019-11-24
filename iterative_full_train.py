@@ -3,8 +3,7 @@ from subprocess import call
 
 def generate_random_rollouts():
     print("\n\nGenerating Random Rollouts\n\n")
-    cmd ="python3 data/generation_script.py --rollouts {} --rootdir {} --threads
-    {} --iteration_num {}\n".format(int(rollouts_per_iteration), args.rollout_dir, int(num_threads), int(i))
+    cmd ="python3 data/walker_generation_script.py --rollouts {} --rootdir {} --threads {} --iteration_num {}\n".format(int(rollouts_per_iteration), args.rollout_dir, int(num_threads), int(i))
     print(cmd)
     call(cmd, shell=True)
 
@@ -41,7 +40,7 @@ if __name__ == "__main__":
                         help="Dir to store all relevant model info, used in"
                         "trainings scripts", default="exp_dir")
     parser.add_argument('--rollout_dir', type=str,
-                        help="Dir to store rollouts", default="datasets/carracing")
+                        help="Dir to store rollouts", default="datasets/walker")
     args = parser.parse_args()
 
     #total_rollouts = 1000

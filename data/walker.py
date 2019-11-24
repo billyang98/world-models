@@ -11,7 +11,7 @@ import PIL
 from utils.misc import sample_continuous_policy
 
 
-def generate_data(rollouts, data_dir, noise_type):  # pylint: disable=R0914
+def generate_data(rollouts, data_dir, noise_type, iteration_num): # pylint: disable=R0914
     assert exists(data_dir), "The data directory does not exist..."
 
     env = gym.make("BipedalWalkerHardcore-v2")
@@ -63,5 +63,8 @@ if __name__ == "__main__":
         help="Noise type used for action sampling.",
         default="brown",
     )
+    parser.add_argument('--iteration_num', type=int,
+                    help="Iteration number of full traning of the world model, "
+                    "VAE, MDNRNN, C")
     args = parser.parse_args()
-    generate_data(args.rollouts, args.dir, args.policy)
+    generate_data(args.rollouts, args.dir, args.policy, args.iteration_num)
