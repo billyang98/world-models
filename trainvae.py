@@ -61,7 +61,7 @@ transform_test = transforms.Compose([
 
 dataset_dir = args.dataset_dir
 if args.iteration_num is not None:
-  dataset_dir = join(args.dataset_dir,'/iter_{}'.format(args.iteration_num))
+  dataset_dir = join(args.dataset_dir,'iter_{}'.format(args.iteration_num))
 
 
 dataset_train = RolloutObservationDataset(dataset_dir,
