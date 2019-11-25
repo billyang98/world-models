@@ -33,7 +33,7 @@ def _threaded_generation(i):
     if args.iteration_num is not None and args.iteration_num > 0:
         print("\nGenerating rollouts from controller")
         # do the controller rollout 
-        cmd += ["python3 test_controller.py --logdir exp_dir --rollouts {} --rollouts_dir {} --iteration_num {}".format(rpt, tdir, args.iteration_num-1)
+        cmd += ["python3 test_controller.py --logdir exp_dir --rollouts {} --rollouts_dir {} --iteration_num {}".format(rpt, tdir, args.iteration_num-1)]
     else:
         print("\nGenerating random rollouts")
         cmd += ["python3", "-m", "data.walker", "--dir",

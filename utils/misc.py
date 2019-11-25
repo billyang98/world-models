@@ -249,6 +249,6 @@ class RolloutGenerator(object):
                         rewards=np.array(r_rollout),
                         actions=np.array(a_rollout),
                         terminals=np.array(d_rollout),
-                    )
+                    ))
                 return - cumulative
             i += 1
