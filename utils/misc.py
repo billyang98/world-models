@@ -5,6 +5,7 @@ from os.path import exists, join
 import gym
 import gym.envs.box2d
 import numpy as np
+import PIL
 import torch
 from torchvision import transforms
 
@@ -233,18 +234,17 @@ class RolloutGenerator(object):
         while True:
             obs = transform(obs).unsqueeze(0).to(self.device)
             action, hidden = self.get_action_and_transition(obs, hidden)
-            obs, reward, done, _ = self.env.step(action)
+            _, reward, done, _ = self.env.step(action)
 
             # Save rollout data
             im_frame = self.env.render(mode="rgb_array")
             img = PIL.Image.fromarray(im_frame)
             img = img.resize((64, 64))
-            s_rollout += [np.array(img)]
+            obs = np.array(img)
+            s_rollout += [obs]
             r_rollout += [reward]
             d_rollout += [done]
             a_rollout += [action]
-
-            # TODO(joschnei): Make this a frame
 
             if render:
                 self.env.render()
@@ -258,14 +258,11 @@ class RolloutGenerator(object):
                         )
                     )
                     np.savez(
-                        join(
-                            rollout_dir,
-                            "rollout_{}".format(rollout_num),
-                            observations=np.array(s_rollout),
-                            rewards=np.array(r_rollout),
-                            actions=np.array(a_rollout),
-                            terminals=np.array(d_rollout),
-                        )
+                        join(rollout_dir, "rollout_{}".format(rollout_num)),
+                        observations=np.array(s_rollout),
+                        rewards=np.array(r_rollout),
+                        actions=np.array(a_rollout),
+                        terminals=np.array(d_rollout),
                     )
                 return -cumulative
             i += 1

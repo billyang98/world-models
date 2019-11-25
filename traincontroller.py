@@ -7,34 +7,43 @@ to process a queue filled with parameters to be evaluated.
 """
 import argparse
 import sys
-from os.path import join, exists
-from os import mkdir, unlink, listdir, getpid, makedirs
+from os import getpid, listdir, makedirs, mkdir, unlink
+from os.path import exists, join
 from time import sleep
-from torch.multiprocessing import Process, Queue
-import torch
+
 import cma
-from models import Controller
-from tqdm import tqdm
 import numpy as np
-from utils.misc import RolloutGenerator, ASIZE, RSIZE, LSIZE
-from utils.misc import load_parameters
-from utils.misc import flatten_parameters
+import torch
+from torch.multiprocessing import Process, Queue
+from tqdm import tqdm
+
+from models import Controller
+from utils.misc import (ASIZE, LSIZE, RSIZE, RolloutGenerator,
+                        flatten_parameters, load_parameters)
 
 # parsing
 parser = argparse.ArgumentParser()
-parser.add_argument('--logdir', type=str, help='Where everything is stored.')
-parser.add_argument('--n-samples', type=int, help='Number of samples used to obtain '
-                    'return estimate.')
-parser.add_argument('--pop-size', type=int, help='Population size.')
-parser.add_argument('--target-return', type=float, help='Stops once the return '
-                    'gets above target_return')
-parser.add_argument('--display', action='store_true', help="Use progress bars if "
-                    "specified.")
-parser.add_argument('--max-workers', type=int, help='Maximum number of workers.',
-                    default=32)
-parser.add_argument('--iteration_num', type=int,
-                    help="Iteration number of full traning of the world model, "
-                    "VAE, MDNRNN, C")
+parser.add_argument("--logdir", type=str, help="Where everything is stored.")
+parser.add_argument(
+    "--n-samples", type=int, help="Number of samples used to obtain " "return estimate."
+)
+parser.add_argument("--pop-size", type=int, help="Population size.")
+parser.add_argument(
+    "--target-return",
+    type=float,
+    help="Stops once the return " "gets above target_return",
+)
+parser.add_argument(
+    "--display", action="store_true", help="Use progress bars if " "specified."
+)
+parser.add_argument(
+    "--max-workers", type=int, help="Maximum number of workers.", default=32
+)
+parser.add_argument(
+    "--iteration_num",
+    type=int,
+    help="Iteration number of full traning of the world model, " "VAE, MDNRNN, C",
+)
 args = parser.parse_args()
 
 # Max number of workers. M
@@ -46,9 +55,9 @@ num_workers = min(args.max_workers, n_samples * pop_size)
 time_limit = 1000
 
 # create tmp dir if non existent and clean it if existent
-tmp_dir = join(args.logdir, 'tmp')
+tmp_dir = join(args.logdir, "tmp")
 if args.iteration_num is not None:
-    tmp_dir = join(args.logdir, 'tmp', 'iter_{}'.format(args.iteration_num))
+    tmp_dir = join(args.logdir, "tmp", "iter_{}".format(args.iteration_num))
 if not exists(tmp_dir):
     makedirs(tmp_dir)
 else:
@@ -56,14 +65,13 @@ else:
         unlink(join(tmp_dir, fname))
 
 # create ctrl dir if non exitent
-ctrl_dir = join(args.logdir, 'ctrl')
+ctrl_dir = join(args.logdir, "ctrl")
 prev_ctrl_dir = ctrl_dir
 if args.iteration_num is not None:
-    ctrl_dir = join(args.logdir, 'ctrl', 'iter_{}'.format(args.iteration_num))
-    prev_ctrl_dir = join(args.logdir, 'ctrl', 'iter_{}'.format(args.iteration_num-1))
+    ctrl_dir = join(args.logdir, "ctrl", "iter_{}".format(args.iteration_num))
+    prev_ctrl_dir = join(args.logdir, "ctrl", "iter_{}".format(args.iteration_num - 1))
 if not exists(ctrl_dir):
     makedirs(ctrl_dir)
-
 
 
 ################################################################################
@@ -91,31 +99,27 @@ def slave_routine(p_queue, r_queue, e_queue, p_index):
     :args e_queue: as soon as not empty, terminate
     :args p_index: the process index
     """
-#    print('in slave')
-    # init routine
-#    print('init routine')
-    gpu = 0 
+    gpu = 0
     if torch.cuda.is_available():
-      gpu = p_index % torch.cuda.device_count()
-    device = torch.device('cuda:{}'.format(gpu) if torch.cuda.is_available() else 'cpu')
+        gpu = p_index % torch.cuda.device_count()
+    device = torch.device("cuda:{}".format(gpu) if torch.cuda.is_available() else "cpu")
 
     # redirect streams
-#    print('redirect streams')
-    sys.stdout = open(join(tmp_dir, str(getpid()) + '.out'), 'a')
-    sys.stderr = open(join(tmp_dir, str(getpid()) + '.err'), 'a')
+    sys.stdout = open(join(tmp_dir, str(getpid()) + ".out"), "a")
+    sys.stderr = open(join(tmp_dir, str(getpid()) + ".err"), "a")
 
-#    print('with torch no grad')
     with torch.no_grad():
-#        print('hello')
         r_gen = 0
         if args.iteration_num is None:
-          r_gen = RolloutGenerator(args.logdir, device, time_limit)
+            r_gen = RolloutGenerator(args.logdir, device, time_limit)
         else:
-          r_gen = RolloutGenerator(args.logdir, device, time_limit, args.iteration_num)
+            r_gen = RolloutGenerator(
+                args.logdir, device, time_limit, args.iteration_num
+            )
 
         while e_queue.empty():
             if p_queue.empty():
-                sleep(.1)
+                sleep(0.1)
             else:
                 s_id, params = p_queue.get()
                 r_queue.put((s_id, r_gen.rollout(params)))
@@ -156,10 +160,11 @@ def evaluate(solutions, results, rollouts=100):
     print("Evaluating...")
     for _ in tqdm(range(rollouts)):
         while r_queue.empty():
-            sleep(.1)
+            sleep(0.1)
         restimates.append(r_queue.get()[1])
 
     return best_guess, np.mean(restimates), np.std(restimates)
+
 
 ################################################################################
 #                           Launch CMA                                         #
@@ -168,23 +173,24 @@ controller = Controller(LSIZE, RSIZE, ASIZE)  # dummy instance
 
 # define current best and load parameters
 cur_best = None
-ctrl_file = join(prev_ctrl_dir, 'best.tar')
+ctrl_file = join(prev_ctrl_dir, "best.tar")
 print("Attempting to load previous best...")
 if exists(ctrl_file):
-    state = torch.load(ctrl_file, map_location={'cuda:0': 'cpu'})
-    cur_best = - state['reward']
+    state = torch.load(ctrl_file, map_location={"cuda:0": "cpu"})
+    cur_best = -state["reward"]
     print("Loading Controller from {}".format(ctrl_file))
-    controller.load_state_dict(state['state_dict'])
+    controller.load_state_dict(state["state_dict"])
     print("Previous best was {}...".format(-cur_best))
 
 parameters = controller.parameters()
-es = cma.CMAEvolutionStrategy(flatten_parameters(parameters), 0.1,
-                              {'popsize': pop_size})
+es = cma.CMAEvolutionStrategy(
+    flatten_parameters(parameters), 0.1, {"popsize": pop_size}
+)
 
 epoch = 0
 log_step = 3
 while not es.stop():
-    if cur_best is not None and - cur_best > args.target_return:
+    if cur_best is not None and -cur_best > args.target_return:
         print("Already better than target, breaking...")
         break
 
@@ -201,7 +207,7 @@ while not es.stop():
         pbar = tqdm(total=pop_size * n_samples)
     for _ in range(pop_size * n_samples):
         while r_queue.empty():
-            sleep(.1)
+            sleep(0.1)
         r_s_id, r = r_queue.get()
         r_list[r_s_id] += r / n_samples
         if args.display:
@@ -221,16 +227,18 @@ while not es.stop():
             print("Saving new best with value {}+-{}...".format(-cur_best, std_best))
             load_parameters(best_params, controller)
             torch.save(
-                {'epoch': epoch,
-                 'reward': - cur_best,
-                 'state_dict': controller.state_dict()},
-                join(ctrl_dir, 'best.tar'))
-        if - best > args.target_return:
+                {
+                    "epoch": epoch,
+                    "reward": -cur_best,
+                    "state_dict": controller.state_dict(),
+                },
+                join(ctrl_dir, "best.tar"),
+            )
+        if -best > args.target_return:
             print("Terminating controller training with value {}...".format(best))
             break
-
 
     epoch += 1
 
 es.result_pretty()
-e_queue.put('EOP')
+e_queue.put("EOP")
