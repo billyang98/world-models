@@ -215,6 +215,8 @@ def data_pass(epoch, train, include_reward):  # pylint: disable=too-many-locals
 
     pbar = tqdm(total=len(loader.dataset), desc="Epoch {}".format(epoch))
     for i, data in enumerate(loader):
+        if (i+1) * BSIZE > len(loader.dataset):
+            break
         obs, action, reward, terminal, next_obs = [arr.to(device) for arr in data]
 
         # transform obs

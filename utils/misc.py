@@ -211,10 +211,10 @@ class RolloutGenerator(object):
         if params is not None:
             load_parameters(params, self.controller)
 
-        obs = self.env.reset()
+        self.env.reset()
 
         # This first render is required !
-        self.env.render()
+        obs = self.env.render(mode='rgb_array')
 
         hidden = [torch.zeros(1, RSIZE).to(self.device) for _ in range(2)]
 

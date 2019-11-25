@@ -27,7 +27,7 @@ def train_mdrnn():
 
 def train_controller():
     print("\n\nTraining Controller\n\n")
-    cmd = "python3 traincontroller.py --logdir {} --n-samples 4 --pop-size 4 --target-return 950 --display --iteration_num {}\n\n".format(args.log_dir, i)
+    cmd = "xvfb-run -s \"-screen 0 1400x900x24\" python3 traincontroller.py --logdir {} --n-samples 4 --pop-size 4 --target-return 950 --display --iteration_num {}\n\n".format(args.log_dir, i)
     print(cmd)
     call(cmd, shell=True)
 
