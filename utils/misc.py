@@ -1,26 +1,32 @@
 """ Various auxiliary utilities """
 import math
-from os.path import join, exists
-import torch
-from torchvision import transforms
-import numpy as np
-from models import MDRNNCell, VAE, Controller
+from os.path import exists, join
+
 import gym
 import gym.envs.box2d
+import numpy as np
+import torch
+from torchvision import transforms
+
+from models import VAE, Controller, MDRNNCell
 
 # A bit dirty: manually change size of car racing env
-gym.envs.box2d.car_racing.STATE_W, gym.envs.box2d.car_racing.STATE_H = 64, 64
-
+gym.envs.box2d.bipedal_walker.VIEWPORT_W, gym.envs.box2d.bipedal_walker.VIEWPORT_H = (
+    64,
+    64,
+)
 # Hardcoded for now
-ASIZE, LSIZE, RSIZE, RED_SIZE, SIZE =\
-    3, 32, 256, 64, 64
+ASIZE, LSIZE, RSIZE, RED_SIZE, SIZE = 4, 32, 256, 64, 64
 
 # Same
-transform = transforms.Compose([
-    transforms.ToPILImage(),
-    transforms.Resize((RED_SIZE, RED_SIZE)),
-    transforms.ToTensor()
-])
+transform = transforms.Compose(
+    [
+        transforms.ToPILImage(),
+        transforms.Resize((RED_SIZE, RED_SIZE)),
+        transforms.ToTensor(),
+    ]
+)
+
 
 def sample_continuous_policy(action_space, seq_len, dt):
     """ Sample a continuous policy.
@@ -38,15 +44,21 @@ def sample_continuous_policy(action_space, seq_len, dt):
     for _ in range(seq_len):
         daction_dt = np.random.randn(*actions[-1].shape)
         actions.append(
-            np.clip(actions[-1] + math.sqrt(dt) * daction_dt,
-                    action_space.low, action_space.high))
+            np.clip(
+                actions[-1] + math.sqrt(dt) * daction_dt,
+                action_space.low,
+                action_space.high,
+            )
+        )
     return actions
+
 
 def save_checkpoint(state, is_best, filename, best_filename):
     """ Save state in filename. Also save in best_filename if is_best. """
     torch.save(state, filename)
     if is_best:
         torch.save(state, best_filename)
+
 
 def flatten_parameters(params):
     """ Flattening parameters.
@@ -57,6 +69,7 @@ def flatten_parameters(params):
         parameters concatenated)
     """
     return torch.cat([p.detach().view(-1) for p in params], dim=0).cpu().numpy()
+
 
 def unflatten_parameters(params, example, device):
     """ Unflatten parameters.
@@ -72,9 +85,10 @@ def unflatten_parameters(params, example, device):
     idx = 0
     unflattened = []
     for e_p in example:
-        unflattened += [params[idx:idx + e_p.numel()].view(e_p.size())]
+        unflattened += [params[idx : idx + e_p.numel()].view(e_p.size())]
         idx += e_p.numel()
     return unflattened
+
 
 def load_parameters(params, controller):
     """ Load flattened parameters into controller.
@@ -83,11 +97,11 @@ def load_parameters(params, controller):
     :args controller: module in which params is loaded
     """
     proto = next(controller.parameters())
-    params = unflatten_parameters(
-        params, controller.parameters(), proto.device)
+    params = unflatten_parameters(params, controller.parameters(), proto.device)
 
     for p, p_0 in zip(controller.parameters(), params):
         p.data.copy_(p_0)
+
 
 class RolloutGenerator(object):
     """ Utility to generate rollouts.
@@ -103,41 +117,46 @@ class RolloutGenerator(object):
     :attr device: device used to run VAE, MDRNN and Controller
     :attr time_limit: rollouts have a maximum of time_limit timesteps
     """
+
     def __init__(self, mdir, device, time_limit):
         """ Build vae, rnn, controller and environment. """
         # Loading world model and vae
-        vae_file, rnn_file, ctrl_file = \
-            [join(mdir, m, 'best.tar') for m in ['vae', 'mdrnn', 'ctrl']]
+        vae_file, rnn_file, ctrl_file = [
+            join(mdir, m, "best.tar") for m in ["vae", "mdrnn", "ctrl"]
+        ]
 
-        assert exists(vae_file) and exists(rnn_file),\
-            "Either vae or mdrnn is untrained."
+        assert exists(vae_file) and exists(
+            rnn_file
+        ), "Either vae or mdrnn is untrained."
 
         vae_state, rnn_state = [
-            torch.load(fname, map_location={'cuda:0': str(device)})
-            for fname in (vae_file, rnn_file)]
+            torch.load(fname, map_location={"cuda:0": str(device)})
+            for fname in (vae_file, rnn_file)
+        ]
 
-        for m, s in (('VAE', vae_state), ('MDRNN', rnn_state)):
-            print("Loading {} at epoch {} "
-                  "with test loss {}".format(
-                      m, s['epoch'], s['precision']))
+        for m, s in (("VAE", vae_state), ("MDRNN", rnn_state)):
+            print(
+                "Loading {} at epoch {} "
+                "with test loss {}".format(m, s["epoch"], s["precision"])
+            )
 
         self.vae = VAE(3, LSIZE).to(device)
-        self.vae.load_state_dict(vae_state['state_dict'])
+        self.vae.load_state_dict(vae_state["state_dict"])
 
         self.mdrnn = MDRNNCell(LSIZE, ASIZE, RSIZE, 5).to(device)
         self.mdrnn.load_state_dict(
-            {k.strip('_l0'): v for k, v in rnn_state['state_dict'].items()})
+            {k.strip("_l0"): v for k, v in rnn_state["state_dict"].items()}
+        )
 
         self.controller = Controller(LSIZE, RSIZE, ASIZE).to(device)
 
         # load controller if it was previously saved
         if exists(ctrl_file):
-            ctrl_state = torch.load(ctrl_file, map_location={'cuda:0': str(device)})
-            print("Loading Controller with reward {}".format(
-                ctrl_state['reward']))
-            self.controller.load_state_dict(ctrl_state['state_dict'])
+            ctrl_state = torch.load(ctrl_file, map_location={"cuda:0": str(device)})
+            print("Loading Controller with reward {}".format(ctrl_state["reward"]))
+            self.controller.load_state_dict(ctrl_state["state_dict"])
 
-        self.env = gym.make('CarRacing-v0')
+        self.env = gym.make("BipedalWalkerHardcore-v2")
         self.device = device
 
         self.time_limit = time_limit
@@ -180,9 +199,7 @@ class RolloutGenerator(object):
         # This first render is required !
         self.env.render()
 
-        hidden = [
-            torch.zeros(1, RSIZE).to(self.device)
-            for _ in range(2)]
+        hidden = [torch.zeros(1, RSIZE).to(self.device) for _ in range(2)]
 
         cumulative = 0
         i = 0
@@ -191,10 +208,12 @@ class RolloutGenerator(object):
             action, hidden = self.get_action_and_transition(obs, hidden)
             obs, reward, done, _ = self.env.step(action)
 
+            # TODO(joschnei): Make this a frame
+
             if render:
                 self.env.render()
 
             cumulative += reward
             if done or i > self.time_limit:
-                return - cumulative
+                return -cumulative
             i += 1
