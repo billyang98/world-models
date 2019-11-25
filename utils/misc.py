@@ -135,7 +135,17 @@ class RolloutGenerator(object):
             rnn_file
         ), "Either vae or mdrnn is untrained."
 
-        print("\nRollout Generator" )
+        if iteration_num is not None:
+            vae_file, rnn_file, ctrl_file = [
+                join(mdir, m, "iter_{}".format(iteration_num), "best.tar")
+                for m in ["vae", "mdrnn", "ctrl"]
+            ]
+
+        assert exists(vae_file) and exists(
+            rnn_file
+        ), "Either vae or mdrnn is untrained."
+
+        print("\nRollout Generator")
 
         vae_state, rnn_state = [
             torch.load(fname, map_location={"cuda:0": str(device)})
@@ -144,10 +154,11 @@ class RolloutGenerator(object):
 
         print("Loading VAE from {}".format(vae_file))
         print("Loading RNN from {}".format(rnn_file))
-        for m, s in (('VAE', vae_state), ('MDRNN', rnn_state)):
-            print("Loading {} at epoch {} "
-                  "with test loss {}".format(
-                      m, s['epoch'], s['precision']))
+        for m, s in (("VAE", vae_state), ("MDRNN", rnn_state)):
+            print(
+                "Loading {} at epoch {} "
+                "with test loss {}".format(m, s["epoch"], s["precision"])
+            )
 
         self.vae = VAE(3, LSIZE).to(device)
         self.vae.load_state_dict(vae_state["state_dict"])
@@ -162,10 +173,9 @@ class RolloutGenerator(object):
         # load controller if it was previously saved
         if exists(ctrl_file):
             print("Loading Controller from {}".format(ctrl_file))
-            ctrl_state = torch.load(ctrl_file, map_location={'cuda:0': str(device)})
-            print("Loading Controller with reward {}".format(
-                ctrl_state['reward']))
-            self.controller.load_state_dict(ctrl_state['state_dict'])
+            ctrl_state = torch.load(ctrl_file, map_location={"cuda:0": str(device)})
+            print("Loading Controller with reward {}".format(ctrl_state["reward"]))
+            self.controller.load_state_dict(ctrl_state["state_dict"])
 
         self.env = gym.make("BipedalWalkerHardcore-v2")
         self.device = device
@@ -224,7 +234,7 @@ class RolloutGenerator(object):
             obs = transform(obs).unsqueeze(0).to(self.device)
             action, hidden = self.get_action_and_transition(obs, hidden)
             obs, reward, done, _ = self.env.step(action)
-            
+
             # Save rollout data
             im_frame = self.env.render(mode="rgb_array")
             img = PIL.Image.fromarray(im_frame)
@@ -242,13 +252,20 @@ class RolloutGenerator(object):
             cumulative += reward
             if done or i > self.time_limit:
                 if rollout_dir is not None:
-                    print("> End of rollout {}, {} frames...".format(rollout_num, len(s_rollout)))
+                    print(
+                        "> End of rollout {}, {} frames...".format(
+                            rollout_num, len(s_rollout)
+                        )
+                    )
                     np.savez(
-                        join(rollout_dir, "rollout_{}".format(rollout_num),
-                        observations=np.array(s_rollout),
-                        rewards=np.array(r_rollout),
-                        actions=np.array(a_rollout),
-                        terminals=np.array(d_rollout),
-                    ))
-                return - cumulative
+                        join(
+                            rollout_dir,
+                            "rollout_{}".format(rollout_num),
+                            observations=np.array(s_rollout),
+                            rewards=np.array(r_rollout),
+                            actions=np.array(a_rollout),
+                            terminals=np.array(d_rollout),
+                        )
+                    )
+                return -cumulative
             i += 1
