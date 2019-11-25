@@ -30,10 +30,16 @@ def _threaded_generation(i):
     makedirs(tdir, exist_ok=True)
     cmd = ['xvfb-run', '-s', '"-screen 0 1400x900x24"']
     cmd += ['--server-num={}'.format(i + 1)]
-    cmd += ["python3", "-m", "data.walker", "--dir",
-            tdir, "--rollouts", str(rpt), "--policy", args.policy]
-    if args.iteration_num is not None:
-      cmd += ["--iteration_num",str(args.iteration_num)]
+    if args.iteration_num is not None and args.iteration_num > 0:
+        print("\nGenerating rollouts from controller")
+        # do the controller rollout 
+        cmd += ["python3 test_controller.py --logdir exp_dir --rollouts {} --rollouts_dir {} --iteration_num {}".format(rpt, tdir, args.iteration_num-1)
+    else:
+        print("\nGenerating random rollouts")
+        cmd += ["python3", "-m", "data.walker", "--dir",
+                tdir, "--rollouts", str(rpt), "--policy", args.policy]
+        if args.iteration_num is not None:
+          cmd += ["--iteration_num",str(args.iteration_num)]
     cmd = " ".join(cmd)
     print(cmd)
     call(cmd, shell=True)

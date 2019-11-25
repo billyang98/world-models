@@ -1,8 +1,8 @@
 import argparse
 from subprocess import call
 
-def generate_random_rollouts():
-    print("\n\nGenerating Random Rollouts\n\n")
+def generate_rollouts():
+    print("\n\nGenerating Rollouts\n\n")
     cmd ="python3 data/walker_generation_script.py --rollouts {} --rootdir {} --threads {} --iteration_num {}\n".format(int(rollouts_per_iteration), args.rollout_dir, int(num_threads), int(i))
     print(cmd)
     call(cmd, shell=True)
@@ -56,13 +56,7 @@ if __name__ == "__main__":
         print("Start iteration {} of iterative training the world"
         "model\n\n".format(i))
         # generate rollouts
-        if i == 0:
-            # random if first time
-            generate_random_rollouts()
-        else: 
-            # using some policy if not
-            # TODO: generate rollouts using model from last iteration
-            generate_random_rollouts()
+        generate_rollouts()
 
         # train vae
         train_vae()
