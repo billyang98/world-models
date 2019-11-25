@@ -11,11 +11,6 @@ from torchvision import transforms
 
 from models import VAE, Controller, MDRNNCell
 
-# A bit dirty: manually change size of car racing env
-gym.envs.box2d.bipedal_walker.VIEWPORT_W, gym.envs.box2d.bipedal_walker.VIEWPORT_H = (
-    64,
-    64,
-)
 # Hardcoded for now
 ASIZE, LSIZE, RSIZE, RED_SIZE, SIZE = 4, 32, 256, 64, 64
 
