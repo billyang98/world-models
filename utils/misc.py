@@ -135,16 +135,19 @@ class RolloutGenerator(object):
             rnn_file
         ), "Either vae or mdrnn is untrained."
 
+        print("\nRollout Generator" )
+
         vae_state, rnn_state = [
             torch.load(fname, map_location={"cuda:0": str(device)})
             for fname in (vae_file, rnn_file)
         ]
 
-        for m, s in (("VAE", vae_state), ("MDRNN", rnn_state)):
-            print(
-                "Loading {} at epoch {} "
-                "with test loss {}".format(m, s["epoch"], s["precision"])
-            )
+        print("Loading VAE from {}".format(vae_file))
+        print("Loading RNN from {}".format(rnn_file))
+        for m, s in (('VAE', vae_state), ('MDRNN', rnn_state)):
+            print("Loading {} at epoch {} "
+                  "with test loss {}".format(
+                      m, s['epoch'], s['precision']))
 
         self.vae = VAE(3, LSIZE).to(device)
         self.vae.load_state_dict(vae_state["state_dict"])
@@ -158,9 +161,11 @@ class RolloutGenerator(object):
 
         # load controller if it was previously saved
         if exists(ctrl_file):
-            ctrl_state = torch.load(ctrl_file, map_location={"cuda:0": str(device)})
-            print("Loading Controller with reward {}".format(ctrl_state["reward"]))
-            self.controller.load_state_dict(ctrl_state["state_dict"])
+            print("Loading Controller from {}".format(ctrl_file))
+            ctrl_state = torch.load(ctrl_file, map_location={'cuda:0': str(device)})
+            print("Loading Controller with reward {}".format(
+                ctrl_state['reward']))
+            self.controller.load_state_dict(ctrl_state['state_dict'])
 
         self.env = gym.make("BipedalWalkerHardcore-v2")
         self.device = device
@@ -186,7 +191,7 @@ class RolloutGenerator(object):
         _, _, _, _, _, next_hidden = self.mdrnn(action, latent_mu, hidden)
         return action.squeeze().cpu().numpy(), next_hidden
 
-    def rollout(self, params, render=False):
+    def rollout(self, params, render=False, rollout_dir=None, rollout_num=0):
         """ Execute a rollout and returns minus cumulative reward.
 
         Load :params: into the controller and execute a single rollout. This
@@ -209,10 +214,25 @@ class RolloutGenerator(object):
 
         cumulative = 0
         i = 0
+
+        s_rollout = []
+        r_rollout = []
+        d_rollout = []
+        a_rollout = []
+
         while True:
             obs = transform(obs).unsqueeze(0).to(self.device)
             action, hidden = self.get_action_and_transition(obs, hidden)
             obs, reward, done, _ = self.env.step(action)
+            
+            # Save rollout data
+            im_frame = self.env.render(mode="rgb_array")
+            img = PIL.Image.fromarray(im_frame)
+            img = img.resize((64, 64))
+            s_rollout += [np.array(img)]
+            r_rollout += [reward]
+            d_rollout += [done]
+            a_rollout += [action]
 
             # TODO(joschnei): Make this a frame
 
@@ -221,5 +241,14 @@ class RolloutGenerator(object):
 
             cumulative += reward
             if done or i > self.time_limit:
-                return -cumulative
+                if rollout_dir is not None:
+                    print("> End of rollout {}, {} frames...".format(rollout_num, len(s_rollout)))
+                    np.savez(
+                        join(rollout_dir, "rollout_{}".format(rollout_num),
+                        observations=np.array(s_rollout),
+                        rewards=np.array(r_rollout),
+                        actions=np.array(a_rollout),
+                        terminals=np.array(d_rollout),
+                    )
+                return - cumulative
             i += 1
