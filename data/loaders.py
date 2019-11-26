@@ -22,10 +22,8 @@ class _RolloutDataset(torch.utils.data.Dataset): # pylint: disable=too-few-publi
 
         if train:
             self._files = self._files[:-num_train]
-#            self._files = self._files[2:4] 
         else:
             self._files = self._files[-num_train:]
-#            self._files = self._files[0:1] 
 
         self._cum_size = None
         self._buffer = None

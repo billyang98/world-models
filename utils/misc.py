@@ -226,7 +226,11 @@ class RolloutGenerator(object):
         d_rollout = []
         a_rollout = []
 
+        print('Starting to create the rollouts')
+
         while True:
+            if i % 100 == 0:
+                print("{} steps done of rollout".format(i))
             obs = transform(obs).unsqueeze(0).to(self.device)
             action, hidden = self.get_action_and_transition(obs, hidden)
             _, reward, done, _ = self.env.step(action)
@@ -246,6 +250,7 @@ class RolloutGenerator(object):
 
             cumulative += reward
             if done or i > self.time_limit:
+                print('Completed rollout with {} steps'.format(i))
                 if rollout_dir is not None:
                     print(
                         "> End of rollout {}, {} frames...".format(
