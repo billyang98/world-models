@@ -188,7 +188,7 @@ es = cma.CMAEvolutionStrategy(
 )
 
 epoch = 0
-log_step = 3
+log_step = 1
 while not es.stop():
     if cur_best is not None and -cur_best > args.target_return:
         print("Already better than target, breaking...")
