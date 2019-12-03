@@ -7,6 +7,7 @@ import gym.envs.box2d
 import numpy as np
 import PIL
 import torch
+from gym import wrappers
 from torchvision import transforms
 
 from models import VAE, Controller, MDRNNCell
@@ -114,7 +115,7 @@ class RolloutGenerator(object):
     :attr time_limit: rollouts have a maximum of time_limit timesteps
     """
 
-    def __init__(self, mdir, device, time_limit, iteration_num=None):
+    def __init__(self, mdir, device, time_limit, iteration_num=None, video_dir=None):
         """ Build vae, rnn, controller and environment. """
         # Loading world model and vae
         vae_file, rnn_file, ctrl_file = [
@@ -197,7 +198,7 @@ class RolloutGenerator(object):
         _, _, _, _, _, next_hidden = self.mdrnn(action, latent_mu, hidden)
         return action.squeeze().cpu().numpy(), next_hidden
 
-    def rollout(self, params, render=False, rollout_dir=None, rollout_num=0):
+    def rollout(self, params, render=False, rollout_dir=None, rollout_num=0, video_dir=None):
         """ Execute a rollout and returns minus cumulative reward.
 
         Load :params: into the controller and execute a single rollout. This
@@ -207,6 +208,9 @@ class RolloutGenerator(object):
 
         :returns: minus cumulative reward
         """
+        if video_dir is not None:
+            self.env = wrappers.Monitor(self.env, "./{}/rollout_{}/".format(video_dir,
+                rollout_num))
         # copy params into the controller
         if params is not None:
             load_parameters(params, self.controller)
@@ -264,5 +268,6 @@ class RolloutGenerator(object):
                         actions=np.array(a_rollout),
                         terminals=np.array(d_rollout),
                     )
+                self.env.reset()
                 return -cumulative
             i += 1

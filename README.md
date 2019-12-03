@@ -80,6 +80,9 @@ python3 traincontroller.py --logdir exp_dir --n-samples 4 --pop-size 4 --target-
 ```bash
 python3 iterative_train.py
 ```
+```bash
+xvfb-run -s "-screen 0 1400x900x24" --server-num=2 python3 evaluate_rollouts.py --logdir exp_dir_full --rollouts 10 
+```
 
 
 ### Notes
