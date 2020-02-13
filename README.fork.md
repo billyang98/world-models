@@ -1,13 +1,9 @@
-# Dyna World Models
+# Pytorch implementation of the "WorldModels"
 
-This is a pytorch implementation of a Dyna variant of Ha and Schmidhuber's World Models paper.
+Paper: Ha and Schmidhuber, "World Models", 2018. https://doi.org/10.5281/zenodo.1207631. For a quick summary of the paper and some additional experiments, visit the [github page](https://ctallec.github.io/world-models/).
 
-Rather than generating trajectories from a random policy once and learning a model from only those trajectories
-we iteratively generate trajectories from the current best policy, learn a better model with those trajectories,
-learn a better policy from that model, and repeat.
 
-# Credits
-This is a fork of https://github.com/ctallec/world-models
+## Prerequisites
 
 The implementation is based on Python3 and PyTorch, check their website [here](https://pytorch.org) for installation instructions. The rest of the requirements is included in the [requirements file](requirements.txt), to install them:
 ```bash
@@ -67,10 +63,10 @@ TODO: write the full script with commands
 
 ### For testing training
 
-some scripts that use smaller numbers to just test that the training scripts are
+Some scripts that use smaller numbers to just test that the training scripts are
 working
 ```bash
-python3 data/walker_generation_script.py --rollouts 10 --rootdir datasets/walker --threads 10 --iteration_num 0
+python3 data/generation_script.py --rollouts 10 --rootdir datasets/carracing --threads 10 --iteration_num 0
 ```
 ```bash
 python3 trainvae.py --logdir exp_dir --epochs 1 --iteration_num 0

@@ -18,8 +18,14 @@ from torch.multiprocessing import Process, Queue
 from tqdm import tqdm
 
 from models import Controller
-from utils.misc import (ASIZE, LSIZE, RSIZE, RolloutGenerator,
-                        flatten_parameters, load_parameters)
+from utils.misc import (
+    ASIZE,
+    LSIZE,
+    RSIZE,
+    RolloutGenerator,
+    flatten_parameters,
+    load_parameters,
+)
 
 # parsing
 parser = argparse.ArgumentParser()
@@ -72,6 +78,8 @@ if args.iteration_num is not None:
     prev_ctrl_dir = join(args.logdir, "ctrl", "iter_{}".format(args.iteration_num - 1))
 if not exists(ctrl_dir):
     makedirs(ctrl_dir)
+
+print(f"Controller dir={ctrl_dir}")
 
 
 ################################################################################
@@ -177,10 +185,10 @@ ctrl_file = join(prev_ctrl_dir, "best.tar")
 print("Attempting to load previous best...")
 if exists(ctrl_file):
     state = torch.load(ctrl_file, map_location={"cuda:0": "cpu"})
-    cur_best = -state["reward"]
+    # cur_best = -state["reward"]
     print("Loading Controller from {}".format(ctrl_file))
     controller.load_state_dict(state["state_dict"])
-    print("Previous best was {}...".format(-cur_best))
+    # print("Previous best was {}...".format(-cur_best))
 
 parameters = controller.parameters()
 es = cma.CMAEvolutionStrategy(
@@ -190,7 +198,7 @@ es = cma.CMAEvolutionStrategy(
 epoch = 0
 log_step = 1
 while not es.stop():
-    if cur_best is not None and -cur_best > args.target_return:
+    if epoch == 5:
         print("Already better than target, breaking...")
         break
 
@@ -222,7 +230,7 @@ while not es.stop():
     if epoch % log_step == log_step - 1:
         best_params, best, std_best = evaluate(solutions, r_list)
         print("Current evaluation: {}".format(best))
-        if not cur_best or cur_best > best:
+        if epoch == 0 or not cur_best or cur_best > best:
             cur_best = best
             print("Saving new best with value {}+-{}...".format(-cur_best, std_best))
             load_parameters(best_params, controller)
@@ -234,7 +242,7 @@ while not es.stop():
                 },
                 join(ctrl_dir, "best.tar"),
             )
-        if -best > args.target_return:
+        if epoch == 5:
             print("Terminating controller training with value {}...".format(best))
             break
 
