@@ -7,6 +7,7 @@ from os.path import exists, join
 import gym
 import numpy as np
 import PIL
+from gym import wrappers
 
 from utils.misc import sample_continuous_policy
 
@@ -15,6 +16,7 @@ def generate_data(rollouts, data_dir, noise_type, iteration_num): # pylint: disa
     assert exists(data_dir), "The data directory does not exist..."
 
     env = gym.make("BipedalWalkerHardcore-v2")
+    env = wrappers.Monitor(env, "./videos/random_policy/")
     seq_len = 1000
 
     for i in range(rollouts):

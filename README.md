@@ -63,10 +63,10 @@ TODO: write the full script with commands
 
 ### For testing training
 
-Some scripts that use smaller numbers to just test that the training scripts are
+some scripts that use smaller numbers to just test that the training scripts are
 working
 ```bash
-python3 data/generation_script.py --rollouts 10 --rootdir datasets/carracing --threads 10 --iteration_num 0
+python3 data/walker_generation_script.py --rollouts 10 --rootdir datasets/walker --threads 10 --iteration_num 0
 ```
 ```bash
 python3 trainvae.py --logdir exp_dir --epochs 1 --iteration_num 0
